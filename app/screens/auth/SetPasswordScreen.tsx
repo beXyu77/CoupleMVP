@@ -1,44 +1,166 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Pressable } from "react-native";
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../../navigation/RootNavigator";
-import { useAuthStore } from "../../store/authStore";
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+
+import { supabase } from "../../lib/supabase";
 import { t } from "../../i18n";
 
-type Props = NativeStackScreenProps<RootStackParamList, "SetPassword">;
+export default function SetPasswordScreen({ navigation }: any) {
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-export default function SetPasswordScreen({ navigation }: Props) {
-  const setPassword = useAuthStore((s) => s.setPassword);
+  const onSubmit = async () => {
+    setError(null);
+    const p = password.trim();
+    const c = confirm.trim();
 
-  const [password, setPwd] = useState("");
-  const [err, setErr] = useState<string | null>(null);
+    if (p.length < 6) {
+      setError(t.auth.passwordTooShort);
+      return;
+    }
+    if (p !== c) {
+      setError("两次密码不一致");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data: u0, error: e0 } = await supabase.auth.getUser();
+      if (e0 || !u0.user) {
+        setError("登录状态异常，请重新注册");
+        return;
+      }
+
+      const uid = u0.user.id;
+
+      const nickname =
+        (u0.user.user_metadata?.nickname as string | undefined)?.trim() ?? "";
+
+      const { error: e1 } = await supabase.auth.updateUser({
+        password: p,
+        data: {
+          needs_password: false,
+        },
+      });
+
+      if (e1) {
+        setError(e1.message);
+        return;
+      }
+
+      if (nickname) {
+        const { error: e2 } = await supabase.from("profiles").upsert(
+          {
+            user_id: uid,
+            nickname,
+            updated_at: new Date().toISOString(),
+          } as any,
+          { onConflict: "user_id" }
+        );
+
+        if (e2) {
+          setError(e2.message);
+          return;
+        }
+      }
+
+      await supabase.auth.signOut();
+
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Login" }],
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <View style={{ flex: 1, padding: 16, gap: 12 }}>
-      {err ? <Text style={{ fontWeight: "700" }}>{err}</Text> : null}
-
-      <TextInput
-        value={password}
-        onChangeText={setPwd}
-        secureTextEntry
-        placeholder={t.auth.passwordPlaceholder}
-        style={{ borderWidth: 1, borderRadius: 12, padding: 12 }}
-      />
-
-      <Pressable
-        onPress={() => {
-          const r = setPassword(password);
-          if (!r.ok) {
-            setErr(t.auth.passwordTooShort);
-            return;
-          }
-          setErr(null);
-          navigation.replace("RegisterSuccess");
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <View
+        style={{
+          flex: 1,
+          padding: 24,
+          gap: 16,
+          justifyContent: "center",
         }}
-        style={{ padding: 12, borderRadius: 12, borderWidth: 1, alignItems: "center" }}
       >
-        <Text style={{ fontWeight: "700" }}>{t.auth.finishRegister}</Text>
-      </Pressable>
-    </View>
+        <Text style={{ fontSize: 24, fontWeight: "700" }}>
+          {t.auth.setPasswordTitle}
+        </Text>
+
+        <View style={{ gap: 6 }}>
+          <Text style={{ opacity: 0.7 }}>{t.auth.password}</Text>
+          <TextInput
+            value={password}
+            onChangeText={setPassword}
+            placeholder={t.auth.passwordPlaceholder}
+            secureTextEntry
+            style={{
+              borderWidth: 1,
+              borderRadius: 12,
+              padding: 12,
+            }}
+          />
+        </View>
+
+        <View style={{ gap: 6 }}>
+          <Text style={{ opacity: 0.7 }}>确认密码</Text>
+          <TextInput
+            value={confirm}
+            onChangeText={setConfirm}
+            placeholder="再次输入密码"
+            secureTextEntry
+            style={{
+              borderWidth: 1,
+              borderRadius: 12,
+              padding: 12,
+            }}
+          />
+        </View>
+
+        {error ? <Text style={{ color: "red" }}>{error}</Text> : null}
+
+        <Pressable
+          onPress={onSubmit}
+          disabled={loading}
+          style={{
+            marginTop: 8,
+            padding: 14,
+            borderRadius: 14,
+            borderWidth: 1,
+            alignItems: "center",
+            opacity: loading ? 0.7 : 1,
+          }}
+        >
+          {loading ? (
+            <ActivityIndicator />
+          ) : (
+            <Text style={{ fontWeight: "700" }}>
+              {t.auth.finishRegister}
+            </Text>
+          )}
+        </Pressable>
+
+        <Pressable
+          onPress={() => navigation.replace("Login")}
+          style={{ marginTop: 10, alignItems: "center" }}
+        >
+          <Text style={{ opacity: 0.7 }}>{t.auth.backToLogin}</Text>
+        </Pressable>
+      </View>
+    </KeyboardAvoidingView>
   );
 }

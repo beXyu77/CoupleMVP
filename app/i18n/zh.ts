@@ -99,6 +99,43 @@ export const zh = {
     unbindButton: "解除绑定",
 
     avatarPick: "更换头像",
+    account: "账号",
+    email: "邮箱",
+    uid: "用户ID",
+    logout: "退出登录",
+    logoutHint: "退出后将回到登录页面",
+    loadingUser: "正在加载账号信息…",
+    notLoggedIn: "未登录",
+    bind: {
+    title: "绑定",
+    myCode: "我的绑定码",
+    generate: "生成绑定码",
+    generating: "生成中…",
+    codeHint: "把绑定码发给对方（10分钟内有效）",
+    
+    enterCode: "输入对方绑定码",
+    codePlaceholder: "6位数字",
+    requestBind: "请求绑定",
+    requesting: "请求中…",
+    
+    statusOpen: "等待对方输入绑定码",
+    statusPending: "收到绑定请求",
+    statusBound: "已绑定",
+    statusExpired: "绑定码已过期",
+    
+    requester: "请求方",
+    approve: "同意绑定",
+    reject: "拒绝",
+    approving: "处理中…",
+    
+    boundTo: (name: string) => `已绑定：${name}`,
+    
+    errNoUser: "未登录",
+    errInvalidCode: "绑定码无效",
+    errExpired: "绑定码已过期",
+    errUsed: "绑定码已被使用",
+    errNotOwner: "你不是该绑定码的创建者",
+  },
   },
   auth: {
     loginTitle: "登录",
@@ -116,7 +153,7 @@ export const zh = {
 
     verifyTitle: "邮箱验证",
     codeHint: (email: string) => `验证码已发送到：${email}`,
-    codePlaceholder: "输入6位验证码",
+    codePlaceholder: "输入8位验证码",
     verify: "确认验证码",
     codeWrong: "验证码错误",
     codeExpired: "验证码已过期",
